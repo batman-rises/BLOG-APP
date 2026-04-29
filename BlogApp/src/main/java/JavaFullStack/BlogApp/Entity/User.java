@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name="users")
@@ -31,4 +33,8 @@ public class User {
     private Role role = Role.USER;
 
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @OneToMany
+    @JoinColumn(name="postId")
+    private List<Post> posts=new ArrayList<>();
 }
