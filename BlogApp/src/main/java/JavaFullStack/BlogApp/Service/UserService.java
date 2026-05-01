@@ -6,13 +6,20 @@ import JavaFullStack.BlogApp.DTO.Response.AuthResponse;
 import JavaFullStack.BlogApp.Entity.User;
 import JavaFullStack.BlogApp.Enums.Role;
 import JavaFullStack.BlogApp.Repository.UserRepository;
+import JavaFullStack.BlogApp.Security.JwtService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
+    private final AuthenticationManager authManager;
 
     public AuthResponse register(RegisterRequest request){
         if(userRepository.existsByEmail(request.getEmail()))
@@ -25,26 +32,34 @@ public class UserService {
         User user = User.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())
-                .password(request.getPassword()) // plain text for now, security comes later
+                .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.USER)
                 .build();
 
         // Save to DB
         userRepository.save(user);
 
-        // Return response DTO — token is empty string for now, will add security tomorrow
-        return new AuthResponse("no-token-yet", user.getUsername(), user.getEmail());
+        // generate real JWT token
+        String token = jwtService.generateToken(user);
+        return new AuthResponse(token, user.getUsername(), user.getEmail());
 
     }
     public AuthResponse login(LoginRequest request){
+        // authManager checks email + password against DB automatically
+        // throws BadCredentialsException if wrong
+        authManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.getEmail(),
+                        request.getPassword()
+                )
+        );
         // Find user by email
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Plain text password check for now — security replaces this later
-        if (!user.getPassword().equals(request.getPassword()))
-            throw new RuntimeException("Wrong password");
 
-        return new AuthResponse("no-token-yet", user.getUsername(), user.getEmail());
+
+        String token = jwtService.generateToken(user);
+        return new AuthResponse(token, user.getUsername(), user.getEmail());
     }
 }
