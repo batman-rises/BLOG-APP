@@ -34,8 +34,21 @@ public class PostController {
     public ResponseEntity<PostResponse> getBySlug(@PathVariable String slug){
         return ResponseEntity.ok(postService.getBySlug(slug));
     }
+
+    // CREATE
+    @PostMapping
+    public ResponseEntity<PostResponse> create(
+            @RequestBody PostRequest request,
+            @RequestHeader("X-User-Id") Long userId) {
+
+        User author = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return ResponseEntity.ok(postService.create(request, author));
+    }
+
     // For now we pass userId in header manually — security will replace this later
-    @PutMapping
+    @PutMapping("/{id}")
     public ResponseEntity<PostResponse>  update(
             @PathVariable Long id,
             @RequestBody PostRequest request,
@@ -50,7 +63,6 @@ public class PostController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @PathVariable Long id,
-            @RequestBody PostRequest request,
             @RequestHeader("X-User-Id") Long userId
     ){
         User currentUser = userRepository.findById(userId)

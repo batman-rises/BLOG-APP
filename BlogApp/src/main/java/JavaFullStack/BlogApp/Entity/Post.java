@@ -34,10 +34,11 @@ public class Post {
 
 
     @ManyToOne(fetch=FetchType.LAZY)
-    @JoinTable(name="authorId")
+    @JoinColumn(name="authorId")
     private User author;
 
     @OneToMany(mappedBy = "post",cascade = CascadeType.ALL,orphanRemoval = true)
+    @Builder.Default
     private List<Comment> comments=new ArrayList<>();
 
     // Many posts ↔ Many tags (creates a post_tags join table automatically)
@@ -47,6 +48,7 @@ public class Post {
             joinColumns = @JoinColumn(name = "post_id"),
             inverseJoinColumns = @JoinColumn(name = "tag_id")
     )
+    @Builder.Default
     private Set<Tag> tags = new HashSet<>();
 
     private LocalDateTime createdAt = LocalDateTime.now();
